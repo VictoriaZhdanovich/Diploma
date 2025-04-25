@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Дизайн главной страницы",
+    "description": "Создайте новый дизайн для главной страницы",
+    "status": "В работе",
+    "priority": "Высокий",
+    "tags": "design,ui",
+    "startDate": "2025-04-16T09:00:00Z",
+    "dueDate": "2025-04-30T17:00:00Z",
+    "points": 5,
+    "projectId": 1,
+    "authorUserId": 2,
+    "assignedUserId": 1
+  }
+]

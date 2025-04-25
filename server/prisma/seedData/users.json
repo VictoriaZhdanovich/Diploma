@@ -1,0 +1,18 @@
+[
+  {
+    "userId": 1,
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174001",
+    "username": "NPapkov",
+    "profilePictureUrl": "https://i.pinimg.com/736x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
+    "teamId": null,
+    "role": "Сотрудник_поддержки"
+  },
+  {
+    "userId": 2,
+    "cognitoId": "123e4567-e89b-12d3-a456-426614174002",
+    "username": "VZhdanovich",
+    "profilePictureUrl": "https://i.pinimg.com/736x/c9/6b/c7/c96bc7ddb1b984a99b859471cd9c158b.jpg",
+    "teamId": null,
+    "role": "Администратор"
+  }
+]

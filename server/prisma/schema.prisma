@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  userId                Int               @id @map("user_id")
+  cognitoId             String            @map("cognito_id")
+  username              String            @map("username")
+  profilePictureUrl     String?           @map("profile_picture_url")
+  teamId                Int?              @map("team_id")
+  role                  Role              @map("role")
+  attachments           attachment[]      @relation("Uploader")
+  comments              comment[]         @relation("Commenter")
+  assignedTasks         task[]            @relation("Assignee")
+  authoredTasks         task[]            @relation("Author")
+  taskAssignments       task_assignment[] @relation("TaskAssignee")
+  teamsAsProductOwner   team[]            @relation("ProductOwner")
+  teamsAsProjectManager team[]            @relation("ProjectManager")
+  team                  team?             @relation(fields: [teamId], references: [id])
+}
+
+model project {
+  id           Int            @id @default(autoincrement()) @map("id")
+  name         String         @map("name")
+  description  String         @map("description")
+  startDate    DateTime       @map("start_date")
+  endDate      DateTime       @map("end_date")
+  project_team project_team[]
+  task         task[]
+}
+
+model team {
+  id                   Int            @id @default(autoincrement()) @map("id")
+  teamName             String         @map("team_name")
+  productOwnerUserId   Int?           @map("product_owner_user_id")
+  projectManagerUserId Int?           @map("project_manager_user_id")
+  project_team         project_team[]
+  productOwner         users?         @relation("ProductOwner", fields: [productOwnerUserId], references: [userId])
+  projectManager       users?         @relation("ProjectManager", fields: [projectManagerUserId], references: [userId])
+  users                users[]
+}
+
+model project_team {
+  id        Int     @id @default(autoincrement()) @map("id")
+  teamId    Int     @map("team_id")
+  projectId Int     @map("project_id")
+  project   project @relation(fields: [projectId], references: [id])
+  team      team    @relation(fields: [teamId], references: [id])
+}
+
+model task {
+  id              Int               @id @default(autoincrement()) @map("id")
+  title           String            @map("title")
+  description     String            @map("description")
+  status          String            @map("status")
+  priority        String            @map("priority")
+  tags            String            @map("tags")
+  startDate       DateTime          @map("start_date")
+  dueDate         DateTime          @map("due_date")
+  points          Int               @map("points")
+  projectId       Int               @map("project_id")
+  authorUserId    Int               @map("author_user_id")
+  assignedUserId  Int               @map("assigned_user_id")
+  attachments     attachment[]
+  comments        comment[]
+  assignee        users             @relation("Assignee", fields: [assignedUserId], references: [userId])
+  author          users             @relation("Author", fields: [authorUserId], references: [userId])
+  project         project           @relation(fields: [projectId], references: [id])
+  taskAssignments task_assignment[]
+}
+
+model attachment {
+  id           Int    @id @default(autoincrement()) @map("id")
+  fileUrl      String @map("file_url")
+  fileName     String @map("file_name")
+  taskId       Int    @map("task_id")
+  uploadedById Int    @map("uploaded_by_id")
+  task         task   @relation(fields: [taskId], references: [id])
+  uploadedBy   users  @relation("Uploader", fields: [uploadedById], references: [userId])
+}
+
+model comment {
+  id     Int    @id @default(autoincrement()) @map("id")
+  text   String @map("text")
+  taskId Int    @map("task_id")
+  userId Int    @map("user_id")
+  task   task   @relation(fields: [taskId], references: [id])
+  user   users  @relation("Commenter", fields: [userId], references: [userId])
+}
+
+model task_assignment {
+  id     Int   @id @default(autoincrement()) @map("id")
+  userId Int   @map("user_id")
+  taskId Int   @map("task_id")
+  task   task  @relation(fields: [taskId], references: [id])
+  user   users @relation("TaskAssignee", fields: [userId], references: [userId])
+}
+
+enum Role {
+  SupportStaff  @map("Сотрудник_поддержки")
+  Administrator @map("Администратор")
+}
