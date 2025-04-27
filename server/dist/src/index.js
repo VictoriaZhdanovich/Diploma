@@ -11,9 +11,9 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const projectRoutes_1 = __importDefault(require("./routes/projectRoutes"));
 const taskRoutes_1 = __importDefault(require("./routes/taskRoutes"));
-// import searchRoutes from "./routes/searchRoutes";
-// import userRoutes from "./routes/userRouters";
-// import teamRoutes from "./routes/teamRoutes";
+const searchRoutes_1 = __importDefault(require("./routes/searchRoutes"));
+const userRouters_1 = __importDefault(require("./routes/userRouters"));
+const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -26,11 +26,11 @@ app.use((0, cors_1.default)());
 app.get("/", (req, res) => {
     res.send("This is home route");
 });
-app.use("/project", projectRoutes_1.default); // Измените /projects на /project
+app.use("/project", projectRoutes_1.default);
 app.use("/tasks", taskRoutes_1.default);
-// app.use("/search", searchRoutes);
-// app.use("/users", userRoutes);
-// app.use("/teams", teamRoutes);
+app.use("/search", searchRoutes_1.default);
+app.use("/users", userRouters_1.default);
+app.use("/teams", teamRoutes_1.default);
 // Обработка 404
 app.use((req, res) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });

@@ -1,8 +1,18 @@
+// client/src/components/Navbar/index.tsx
+"use client";
+
 import React from 'react';
-import { Menu, Moon, Search, Settings, Sun } from "lucide-react";
+import { Menu, Moon, Search, Settings, Sun, User } from "lucide-react"; // Добавили иконку User
 import Link from "next/link";
+import Image from "next/image"; // Импортируем Image из next/image
 import { useAppDispatch, useAppSelector } from '@/app/redux';
 import { setIsDarkMode, setIsSidebarCollapsed } from '@/state';
+
+// Предполагаем, что у вас есть тип для пользователя в state/api.ts
+interface UserDetails {
+  username: string;
+  profilePictureUrl?: string;
+}
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -11,9 +21,20 @@ const Navbar = () => {
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
+  // Получаем данные текущего пользователя из Redux (настройте путь в зависимости от вашей структуры состояния)
+  const currentUserDetails = useAppSelector((state) => state.global.currentUser) as UserDetails | null;
+
+  // Заглушка для функции выхода (замените на вашу логику выхода)
+  const handleSignOut = () => {
+    console.log("Пользователь вышел из системы");
+    // Добавьте вашу логику выхода, например, очистка токенов, перенаправление и т.д.
+    // Пример: localStorage.removeItem("token");
+    // window.location.href = "/login";
+  };
+
   return (
     <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black dark:px-4 dark:py-3">
-      {/* search bar */}
+      {/* Панель поиска */}
       <div className="flex items-center gap-8">
         {!isSidebarCollapsed ? null : (
           <button onClick={() => dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))}>
@@ -58,6 +79,30 @@ const Navbar = () => {
           </Link>
         </div>
         <div className="ml-2 mr-5 hidden min-h-[2em] w-[0.1rem] bg-gray-200 md:inline-block"></div>
+        <div className="hidden items-center justify-between md:flex">
+          <div className="align-center flex h-9 w-9 justify-center">
+            {currentUserDetails?.profilePictureUrl ? (
+              <Image
+                src={`https://pm-s3-images.s3.us-east-2.amazonaws.com/${currentUserDetails.profilePictureUrl}`}
+                alt={currentUserDetails.username || "Фотография профиля пользователя"}
+                width={36} // Соответствует h-9 (36px)
+                height={36} // Соответствует h-9 (36px)
+                className="h-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />
+            )}
+          </div>
+          <span className="mx-3 text-gray-800 dark:text-white">
+            {currentUserDetails?.username || "Гость"}
+          </span>
+          <button
+            className="hidden rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 md:block"
+            onClick={handleSignOut}
+          >
+            Выйти
+          </button>
+        </div>
       </div>
     </div>
   );

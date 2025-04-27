@@ -7,9 +7,9 @@ import morgan from "morgan";
 
 import projectRoutes from "./routes/projectRoutes";
 import taskRoutes from "./routes/taskRoutes";
-// import searchRoutes from "./routes/searchRoutes";
-// import userRoutes from "./routes/userRouters";
-// import teamRoutes from "./routes/teamRoutes";
+import searchRoutes from "./routes/searchRoutes";
+import userRoutes from "./routes/userRouters";
+import teamRoutes from "./routes/teamRoutes";
 
 dotenv.config();
 const app = express();
@@ -25,11 +25,11 @@ app.get("/", (req, res) => {
     res.send("This is home route");
 });
 
-app.use("/project", projectRoutes); // Измените /projects на /project
+app.use("/project", projectRoutes); 
 app.use("/tasks", taskRoutes);
-// app.use("/search", searchRoutes);
-// app.use("/users", userRoutes);
-// app.use("/teams", teamRoutes);
+app.use("/search", searchRoutes);
+app.use("/users", userRoutes);
+app.use("/teams", teamRoutes);
 
 // Обработка 404
 app.use((req: express.Request, res: express.Response) => {

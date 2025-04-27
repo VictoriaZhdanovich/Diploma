@@ -93,10 +93,7 @@ export const updateTaskStatus = async (
   }
 };
 
-export const getUserTasks = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getUserTasks = async (req: Request, res: Response): Promise<void> => {
   const { userId } = req.params;
   try {
     const tasks = await prisma.task.findMany({

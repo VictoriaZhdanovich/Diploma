@@ -24,8 +24,8 @@ export enum Status {
 }
 
 export enum Role {
-    SupportStaff = "SupportStaff",
-    Administrator = "Administrator",
+    SupportStaff = "Сотрудник_поддержки",
+    Administrator = "Администратор",
 }
 
 export interface User {
@@ -59,8 +59,8 @@ export interface Attachment {
 export interface Team {
     id: number;
     name: string;
-    productOwnerId: number; // Added
-    projectManagerId: number; // Added
+    productOwnerId: number;
+    projectManagerId: number;
     description?: string;
     users?: User[];
 }
@@ -99,11 +99,27 @@ export interface Task {
     attachments?: Attachment[];
 }
 
+// Интерфейсы для входа
+interface LoginRequest {
+    username: string;
+    password: string;
+}
+
+interface LoginResponse {
+    user: User;
+    token: string;
+}
+
 export const api = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
         prepareHeaders: (headers) => {
             console.log("Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+            // Добавляем токен авторизации в заголовки, если он есть
+            const token = localStorage.getItem("token");
+            if (token) {
+                headers.set("Authorization", `Bearer ${token}`);
+            }
             return headers;
         },
         fetchFn: async (input, init) => {
@@ -116,10 +132,20 @@ export const api = createApi({
     reducerPath: "api",
     tagTypes: ["Projects", "Tasks", "Teams", "Users"],
     endpoints: (build) => ({
+        // Эндпоинт для входа
+        login: build.mutation<LoginResponse, LoginRequest>({
+            query: (credentials) => ({
+                url: "auth/login",
+                method: "POST",
+                body: credentials,
+            }),
+        }),
+
         getProjects: build.query<Project[], void>({
             query: () => "project",
             providesTags: ["Projects"],
         }),
+
         createProject: build.mutation<Project, Partial<Project>>({
             query: (project) => ({
                 url: "project",
@@ -128,13 +154,23 @@ export const api = createApi({
             }),
             invalidatesTags: ["Projects"],
         }),
-        getTasks: build.query<Task[], { projectId: number }>({
-            query: ({ projectId }) => `tasks?projectId=${projectId}`,
+
+        // Обновляем getTasks для поддержки фильтрации по userId
+        getTasks: build.query<Task[], { projectId?: number; userId?: number }>({
+            query: ({ projectId, userId }) => {
+                let url = "tasks";
+                const params = new URLSearchParams();
+                if (projectId) params.append("projectId", projectId.toString());
+                if (userId) params.append("userId", userId.toString());
+                if (params.toString()) url += `?${params.toString()}`;
+                return url;
+            },
             providesTags: (result) =>
                 result
                     ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
                     : [{ type: "Tasks" as const }],
         }),
+
         createTask: build.mutation<Task, Partial<Task>>({
             query: (task) => ({
                 url: "tasks",
@@ -143,6 +179,7 @@ export const api = createApi({
             }),
             invalidatesTags: ["Tasks"],
         }),
+
         updateTaskStatus: build.mutation<Task, { taskId: number; status: string }>({
             query: ({ taskId, status }) => ({
                 url: `tasks/${taskId}/status`,
@@ -153,27 +190,51 @@ export const api = createApi({
                 { type: "Tasks" as const, id: taskId },
             ],
         }),
+
         getTeams: build.query<Team[], void>({
             query: () => "teams",
             providesTags: ["Teams"],
         }),
+
         search: build.query<SearchResults, string>({
             query: (query) => `search?query=${query}`,
         }),
+
         getTasksByUser: build.query<Task[], { userId: number }>({
-            query: ({ userId }) => `tasks?assignedUserId=${userId}`,
+            query: ({ userId }) => `tasks/user/${userId}`,
             providesTags: (result) =>
                 result
                     ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
                     : [{ type: "Tasks" as const }],
         }),
+
         getAuthUser: build.query<AuthUserResponse, void>({
             query: () => "auth/user",
             providesTags: ["Users"],
         }),
+
         getUsers: build.query<User[], void>({
             query: () => "users",
             providesTags: ["Users"],
+        }),
+
+        // Добавим эндпоинты для создания команды и пользователя (для администратора)
+        createTeam: build.mutation<Team, Partial<Team>>({
+            query: (team) => ({
+                url: "teams",
+                method: "POST",
+                body: team,
+            }),
+            invalidatesTags: ["Teams"],
+        }),
+
+        createUser: build.mutation<User, Partial<User>>({
+            query: (user) => ({
+                url: "users",
+                method: "POST",
+                body: user,
+            }),
+            invalidatesTags: ["Users"],
         }),
     }),
 });
@@ -189,4 +250,7 @@ export const {
     useGetTasksByUserQuery,
     useGetAuthUserQuery,
     useGetUsersQuery,
+    useLoginMutation,
+    useCreateTeamMutation,
+    useCreateUserMutation,
 } = api;
