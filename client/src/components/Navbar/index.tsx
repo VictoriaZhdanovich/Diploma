@@ -97,7 +97,7 @@ const Navbar = () => {
             {currentUserDetails?.username || "Гость"}
           </span>
           <button
-            className="hidden rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 md:block"
+            className="hidden rounded bg-orange-400 px-4 py-2 text-xs font-bold text-white hover:bg-orange-500 md:block"
             onClick={handleSignOut}
           >
             Выйти

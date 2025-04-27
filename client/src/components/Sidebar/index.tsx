@@ -70,7 +70,7 @@ const Sidebar = () => {
                     <SidebarLink icon={Home} label="Главная" href="/" />
                     <SidebarLink icon={Briefcase} label="Таймлайн" href="/timeline" />
                     <SidebarLink icon={Search} label="Поиск" href="/search" />
-                    <SidebarLink icon={Settings} label="Настройки" href="/settings" />
+                    <SidebarLink icon={Settings} label="Настройки аккаунта" href="/settings" />
                     <SidebarLink icon={User} label="Пользователи" href="/users" />
                     <SidebarLink icon={Users} label="Команды" href="/teams" />
                 </nav>

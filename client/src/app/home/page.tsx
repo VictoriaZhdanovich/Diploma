@@ -1,3 +1,4 @@
+// client/src/app/home/page.tsx
 "use client";
 
 import {
@@ -26,7 +27,6 @@ import {
 } from "recharts";
 import { dataGridClassNames, dataGridSxStyles } from "@/lib/utils";
 
-// Локализация дат для русского языка
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "-";
   const date = new Date(dateString);
@@ -45,7 +45,7 @@ const taskColumns: GridColDef[] = [
     field: "dueDate",
     headerName: "Дата выполнения",
     width: 150,
-    renderCell: (params) => formatDate(params.value as string), // Форматируем дату
+    renderCell: (params) => formatDate(params.value as string),
   },
 ];
 
@@ -68,15 +68,15 @@ const HomePage = () => {
 
   const priorityCount = tasks.reduce(
     (acc: Record<string, number>, task: Task) => {
-      const { priority } = task;
-      acc[priority as Priority] = (acc[priority as Priority] || 0) + 1;
+      const priority = task.priority || "Не указан"; // Добавляем значение по умолчанию
+      acc[priority] = (acc[priority] || 0) + 1;
       return acc;
     },
     {},
   );
 
   const taskDistribution = Object.keys(priorityCount).map((key) => ({
-    name: key === "Low" ? "Низкий" : key === "Medium" ? "Средний" : "Высокий", // Локализация приоритетов
+    name: key, // Используем значение напрямую, так как Priority уже на русском
     count: priorityCount[key],
   }));
 
@@ -116,43 +116,78 @@ const HomePage = () => {
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
             Распределение задач по приоритету
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={taskDistribution}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={chartColors.barGrid}
-              />
-              <XAxis dataKey="name" stroke={chartColors.text} />
-              <YAxis stroke={chartColors.text} />
-              <Tooltip
-                contentStyle={{
-                  width: "min-content",
-                  height: "min-content",
-                }}
-              />
-              <Legend formatter={(value) => (value === "count" ? "Количество" : value)} />
-              <Bar dataKey="count" fill={chartColors.bar} name="Количество" />
-            </BarChart>
-          </ResponsiveContainer>
+          {taskDistribution.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={taskDistribution}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke={chartColors.barGrid}
+                />
+                <XAxis dataKey="name" stroke={chartColors.text} />
+                <YAxis stroke={chartColors.text} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: isDarkMode ? "#333" : "#fff",
+                    border: "none",
+                    color: chartColors.text,
+                  }}
+                />
+                <Legend
+                  formatter={(value) =>
+                    value === "count" ? "Количество" : value
+                  }
+                />
+                <Bar dataKey="count" fill={chartColors.bar} name="Количество" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">
+              Нет данных для отображения графика.
+            </p>
+          )}
         </div>
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary">
           <h3 className="mb-4 text-lg font-semibold dark:text-white">
             Статус проектов
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie dataKey="count" data={projectStatus} fill="#82ca9d" label>
-                {projectStatus.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend formatter={(value) => (value === "count" ? "Количество" : value)} />
-            </PieChart>
-          </ResponsiveContainer>
+          {projectStatus.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  dataKey="count"
+                  data={projectStatus}
+                  label
+                  labelLine={true}
+                  // label={({ name, percent }) =>
+                  //   `${name}: ${(percent * 100).toFixed(0)}%`
+                  // }
+                >
+                  {projectStatus.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: isDarkMode ? "#333" : "#fff",
+                    border: "none",
+                    color: chartColors.text,
+                  }}
+                />
+                <Legend
+                  formatter={(value) =>
+                    value === "count" ? "Количество" : value
+                  }
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">
+              Нет данных для отображения графика.
+            </p>
+          )}
         </div>
         <div className="rounded-lg bg-white p-4 shadow dark:bg-dark-secondary md:col-span-2">
           <h3 className="mb-4 text-lg font-semibold dark:text-white">

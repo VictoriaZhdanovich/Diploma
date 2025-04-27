@@ -1,8 +1,8 @@
 'use client';
 
 import Modal from '@/components/Modal';
-import { Priority, Status, useCreateTaskMutation } from '@/state/api';
-import React, { useState } from 'react';
+import { Priority, Status, useCreateTaskMutation, useGetUsersQuery } from '@/state/api';
+import React, { useState, useEffect } from 'react';
 import { formatISO } from 'date-fns/formatISO';
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
 
 const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [createTask, { isLoading, error }] = useCreateTaskMutation();
+  const { data: users, isLoading: usersLoading, error: usersError } = useGetUsersQuery();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Status>(Status.ToDo);
@@ -22,51 +23,115 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [dueDate, setDueDate] = useState('');
   const [authorUserId, setAuthorUserId] = useState('');
   const [assignedUserId, setAssignedUserId] = useState('');
-  const [projectId, setProjectId] = useState('');
 
-  console.log('isFormValid:', title && authorUserId && (id !== null || projectId));
-  console.log('title:', title);
-  console.log('authorUserId:', authorUserId);
-  console.log('id:', id);
-  console.log('projectId:', projectId);
+  // Сбрасываем выбор, если users изменились
+  useEffect(() => {
+    if (!users || usersLoading) {
+      // Если users ещё не загрузились, ничего не делаем
+      return;
+    }
+
+    if (users.length > 0) {
+      if (authorUserId && !users.some((user) => user.userId && user.userId.toString() === authorUserId)) {
+        setAuthorUserId('');
+      }
+      if (assignedUserId && !users.some((user) => user.userId && user.userId.toString() === assignedUserId)) {
+        setAssignedUserId('');
+      }
+    } else {
+      setAuthorUserId('');
+      setAssignedUserId('');
+    }
+  }, [users, usersLoading, authorUserId, assignedUserId]);
 
   const handleSubmit = async () => {
-    if (!title || !authorUserId || (id === null && !projectId)) return;
+    // Проверка: все обязательные поля должны быть заполнены
+    if (!title || !authorUserId || !assignedUserId) {
+      alert("Пожалуйста, заполните все обязательные поля: заголовок, инициатор и исполнитель.");
+      return;
+    }
+
+    const parsedAuthorUserId = parseInt(authorUserId);
+    const parsedAssignedUserId = parseInt(assignedUserId);
+
+    // Проверка: убедимся, что parseInt вернул валидное число
+    if (isNaN(parsedAuthorUserId) || isNaN(parsedAssignedUserId)) {
+      alert("Некорректный выбор инициатора или исполнителя.");
+      return;
+    }
 
     const formattedStartDate = startDate ? formatISO(new Date(startDate), { representation: 'complete' }) : undefined;
     const formattedDueDate = dueDate ? formatISO(new Date(dueDate), { representation: 'complete' }) : undefined;
 
+    // Проверка: dueDate не раньше startDate
+    if (formattedStartDate && formattedDueDate && new Date(formattedDueDate) < new Date(formattedStartDate)) {
+      alert("Конечная дата не может быть раньше начальной!");
+      return;
+    }
+
+    const payload = {
+      title,
+      description,
+      status,
+      priority: priority || Priority.Backlog,
+      tags,
+      startDate: formattedStartDate,
+      dueDate: formattedDueDate,
+      points: 0,
+      authorUserId: parsedAuthorUserId,
+      assignedUserId: parsedAssignedUserId,
+      projectId: Number(id),
+    };
+
+    console.log("Payload for createTask:", payload);
+
     try {
-      await createTask({
-        title,
-        description,
-        status,
-        priority,
-        tags,
-        startDate: formattedStartDate,
-        dueDate: formattedDueDate,
-        authorUserId: parseInt(authorUserId),
-        assignedUserId: assignedUserId ? parseInt(assignedUserId) : undefined,
-        projectId: id !== null ? Number(id) : Number(projectId),
-      }).unwrap();
+      await createTask(payload).unwrap();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create task:', err);
     }
   };
 
   const isFormValid = () => {
-    return title && authorUserId && (id !== null || projectId);
+    return title && authorUserId && assignedUserId && id !== null && users && users.length > 0;
   };
 
   const selectStyles =
     'mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none';
-
   const inputStyles =
     'w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none';
 
+  // Для отладки: логируем пользователя
+  const getUserById = (userId: string) => {
+    const parsedId = parseInt(userId);
+    if (isNaN(parsedId)) return null;
+    const user = users?.find((u) => u.userId === parsedId);
+    console.log(`User for ID ${parsedId}:`, user);
+    return user;
+  };
+
+  // Функция для безопасного получения сообщения об ошибке
+  const getErrorMessage = (err: any): string => {
+    if (err && 'status' in err && 'data' in err) {
+      return (err.data as any)?.message || JSON.stringify(err.data);
+    }
+    return err?.message || JSON.stringify(err);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} name="Создать новую задачу">
+      {usersLoading && <p>Загрузка пользователей...</p>}
+      {usersError && (
+        <p className="text-red-500">
+          Ошибка загрузки пользователей: {getErrorMessage(usersError)}
+        </p>
+      )}
+      {!usersLoading && !usersError && (!users || users.length === 0) && (
+        <p className="text-red-500">
+          Список пользователей пуст. Невозможно создать задачу.
+        </p>
+      )}
       <form
         className="mt-4 space-y-6"
         onSubmit={(e) => {
@@ -137,30 +202,76 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
-        <input
-          type="text"
-          className={inputStyles}
-          placeholder="ID инициатора"
-          value={authorUserId}
-          onChange={(e) => setAuthorUserId(e.target.value)}
-        />
-        <input
-          type="text"
-          className={inputStyles}
-          placeholder="ID исполнителя"
-          value={assignedUserId}
-          onChange={(e) => setAssignedUserId(e.target.value)}
-        />
-        <input
-          type="text"
-          className={inputStyles}
-          placeholder="ProjectId"
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2 dark:text-gray-200">
+            Инициатор
+          </label>
+          <select
+            className={selectStyles}
+            value={authorUserId}
+            onChange={(e) => setAuthorUserId(e.target.value)}
+            required
+          >
+            <option value="">Выберите инициатора</option>
+            {users?.map((user) => (
+              <option key={user.userId} value={user.userId}>
+                {user.username}
+              </option>
+            ))}
+          </select>
+          {authorUserId && (
+            <div className="mt-2 flex items-center">
+              <img
+                src={
+                  getUserById(authorUserId)?.profilePictureUrl || '/user.jpg'
+                }
+                alt="Фото инициатора"
+                className="w-10 h-10 rounded-full mr-2"
+                onError={(e) => (e.currentTarget.src = '/user.jpg')}
+              />
+              <span className="dark:text-gray-200">
+                {getUserById(authorUserId)?.username}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2 dark:text-gray-200">
+            Исполнитель
+          </label>
+          <select
+            className={selectStyles}
+            value={assignedUserId}
+            onChange={(e) => setAssignedUserId(e.target.value)}
+            required
+          >
+            <option value="">Выберите исполнителя</option>
+            {users?.map((user) => (
+              <option key={user.userId} value={user.userId}>
+                {user.username}
+              </option>
+            ))}
+          </select>
+          {assignedUserId && (
+            <div className="mt-2 flex items-center">
+              <img
+                src={
+                  getUserById(assignedUserId)?.profilePictureUrl || '/user.jpg'
+                }
+                alt="Фото исполнителя"
+                className="w-10 h-10 rounded-full mr-2"
+                onError={(e) => (e.currentTarget.src = '/user.jpg')}
+              />
+              <span className="dark:text-gray-200">
+                {getUserById(assignedUserId)?.username}
+              </span>
+            </div>
+          )}
+        </div>
+        
         {error && (
           <p className="text-red-500 text-sm">
-            Произошла ошибка при создании задачи: {JSON.stringify(error)}
+            Произошла ошибка при создании задачи: {getErrorMessage(error)}
           </p>
         )}
         <button

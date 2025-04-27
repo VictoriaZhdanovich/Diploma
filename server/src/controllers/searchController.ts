@@ -24,12 +24,12 @@ export const search = async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    // const users = await prisma.user.findMany({
-    //   where: {
-    //     OR: [{ username: { contains: query as string } }],
-    //   },
-    // });
-    // res.json({ tasks, projects, users });
+    const users = await prisma.users.findMany({
+      where: {
+        OR: [{ username: { contains: query as string } }],
+      },
+    });
+    res.json({ tasks, projects, users });
     res.json({ tasks, projects });
   } catch (error: any) {
     res

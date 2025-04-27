@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client"; // Исправляем импорт
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -35,7 +35,7 @@ export const createTask = async (
     title,
     description,
     status,
-    priority,
+    priority = "Низкий",
     tags,
     startDate,
     dueDate,
@@ -44,6 +44,41 @@ export const createTask = async (
     authorUserId,
     assignedUserId,
   } = req.body;
+
+  console.log("Received payload:", req.body);
+  console.log("authorUserId:", authorUserId, "assignedUserId:", assignedUserId);
+
+  // Валидация: проверяем, что authorUserId и assignedUserId указаны
+  if (!authorUserId || !assignedUserId) {
+    res.status(400).json({ message: "Инициатор и исполнитель обязательны." });
+    return;
+  }
+
+  // Проверяем, что пользователи существуют
+  const authorExists = await prisma.users.findUnique({
+    where: { userId: authorUserId },
+  });
+  const assigneeExists = await prisma.users.findUnique({
+    where: { userId: assignedUserId },
+  });
+
+  if (!authorExists) {
+    res.status(400).json({ message: `Пользователь с ID ${authorUserId} (инициатор) не найден.` });
+    return;
+  }
+  if (!assigneeExists) {
+    res.status(400).json({ message: `Пользователь с ID ${assignedUserId} (исполнитель) не найден.` });
+    return;
+  }
+
+  // Устанавливаем значения по умолчанию для дат
+  const defaultStartDate = startDate ? new Date(startDate) : new Date();
+  const defaultDueDate = dueDate ? new Date(dueDate) : (() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    return date;
+  })();
+
   try {
     const newTask = await prisma.task.create({
       data: {
@@ -52,8 +87,8 @@ export const createTask = async (
         status,
         priority,
         tags,
-        startDate,
-        dueDate,
+        startDate: defaultStartDate,
+        dueDate: defaultDueDate,
         points,
         projectId,
         authorUserId,

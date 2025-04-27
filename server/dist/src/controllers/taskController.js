@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserTasks = exports.updateTaskStatus = exports.createTask = exports.getTasks = void 0;
-const client_1 = require("@prisma/client"); // Исправляем импорт
+const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { projectId } = req.query;
@@ -39,7 +39,36 @@ const getTasks = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getTasks = getTasks;
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { title, description, status, priority, tags, startDate, dueDate, points, projectId, authorUserId, assignedUserId, } = req.body;
+    const { title, description, status, priority = "Низкий", tags, startDate, dueDate, points, projectId, authorUserId, assignedUserId, } = req.body;
+    console.log("Received payload:", req.body);
+    console.log("authorUserId:", authorUserId, "assignedUserId:", assignedUserId);
+    // Валидация: проверяем, что authorUserId и assignedUserId указаны
+    if (!authorUserId || !assignedUserId) {
+        res.status(400).json({ message: "Инициатор и исполнитель обязательны." });
+        return;
+    }
+    // Проверяем, что пользователи существуют
+    const authorExists = yield prisma.users.findUnique({
+        where: { userId: authorUserId },
+    });
+    const assigneeExists = yield prisma.users.findUnique({
+        where: { userId: assignedUserId },
+    });
+    if (!authorExists) {
+        res.status(400).json({ message: `Пользователь с ID ${authorUserId} (инициатор) не найден.` });
+        return;
+    }
+    if (!assigneeExists) {
+        res.status(400).json({ message: `Пользователь с ID ${assignedUserId} (исполнитель) не найден.` });
+        return;
+    }
+    // Устанавливаем значения по умолчанию для дат
+    const defaultStartDate = startDate ? new Date(startDate) : new Date();
+    const defaultDueDate = dueDate ? new Date(dueDate) : (() => {
+        const date = new Date();
+        date.setDate(date.getDate() + 7);
+        return date;
+    })();
     try {
         const newTask = yield prisma.task.create({
             data: {
@@ -48,8 +77,8 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 status,
                 priority,
                 tags,
-                startDate,
-                dueDate,
+                startDate: defaultStartDate,
+                dueDate: defaultDueDate,
                 points,
                 projectId,
                 authorUserId,

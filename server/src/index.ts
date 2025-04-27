@@ -11,7 +11,9 @@ import searchRoutes from "./routes/searchRoutes";
 import userRoutes from "./routes/userRouters";
 import teamRoutes from "./routes/teamRoutes";
 
+
 dotenv.config();
+
 const app = express();
 app.use(express.json());
 app.use(helmet());
@@ -30,6 +32,7 @@ app.use("/tasks", taskRoutes);
 app.use("/search", searchRoutes);
 app.use("/users", userRoutes);
 app.use("/teams", teamRoutes);
+
 
 // Обработка 404
 app.use((req: express.Request, res: express.Response) => {

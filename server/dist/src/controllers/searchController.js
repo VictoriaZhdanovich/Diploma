@@ -31,12 +31,12 @@ const search = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 ],
             },
         });
-        // const users = await prisma.user.findMany({
-        //   where: {
-        //     OR: [{ username: { contains: query as string } }],
-        //   },
-        // });
-        // res.json({ tasks, projects, users });
+        const users = yield prisma.users.findMany({
+            where: {
+                OR: [{ username: { contains: query } }],
+            },
+        });
+        res.json({ tasks, projects, users });
         res.json({ tasks, projects });
     }
     catch (error) {
