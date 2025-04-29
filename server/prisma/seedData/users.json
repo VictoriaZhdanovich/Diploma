@@ -1,18 +1,20 @@
 [
   {
-    "userId": 1,
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174001",
-    "username": "NPapkov",
-    "profilePictureUrl": "https://i.pinimg.com/736x/5f/40/6a/5f406ab25e8942cbe0da6485afd26b71.jpg",
-    "teamId": null,
-    "role": "Сотрудник_поддержки"
+    "username": "Victoria Zhdanovich",
+    "profilePictureUrl": "https://i.pinimg.com/736x/ec/b3/32/ecb3320a4cb6e6ecdd9d903f1fd65a8.jpg",
+    "teamId": 1,
+    "role": "Administrator"
   },
   {
-    "userId": 2,
-    "cognitoId": "123e4567-e89b-12d3-a456-426614174002",
-    "username": "VZhdanovich",
-    "profilePictureUrl": "https://i.pinimg.com/736x/c9/6b/c7/c96bc7ddb1b984a99b859471cd9c158b.jpg",
-    "teamId": null,
-    "role": "Администратор"
+    "username": "Sergey Ivanov",
+    "profilePictureUrl": "https://i.pinimg.com/736x/25/33/8f/25338f488af2c45912c15eab32e363.jpg",
+    "teamId": 1,
+    "role": "SupportStaff"
+  },
+  {
+    "username": "Dmitry Smirnov",
+    "profilePictureUrl": "https://i.pinimg.com/736x/8d/e6/21/8de621e690298a6c937493bbd91669d.jpg",
+    "teamId": 1,
+    "role": "SupportStaff"
   }
 ]

@@ -209,7 +209,7 @@
                 {task.author && (
                 task.author.profilePictureUrl ? (
                     <img
-                    key={task.author.id}
+                    key={task.author.userId}
                     src={task.author.profilePictureUrl} 
                     alt={task.author.username}
                     width={30}
@@ -218,7 +218,7 @@
                     />
                 ) : (
                     <ImageIcon
-                    key={task.author.id}
+                    key={task.author.userId}
                     size={30}
                     className="h-8 w-8 rounded-full border-2 border-white dark:border-dark-secondary"
                     />

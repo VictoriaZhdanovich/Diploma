@@ -9,11 +9,12 @@ datasource db {
 
 model users {
   userId                Int               @id @map("user_id")
-  cognitoId             String            @map("cognito_id")
   username              String            @map("username")
   profilePictureUrl     String?           @map("profile_picture_url")
   teamId                Int?              @map("team_id")
   role                  Role              @map("role")
+  password              String            @map("password") // Новое поле
+  forcePasswordChange   Boolean           @default(true) @map("force_password_change") // Новое поле
   attachments           attachment[]      @relation("Uploader")
   comments              comment[]         @relation("Commenter")
   assignedTasks         task[]            @relation("Assignee")

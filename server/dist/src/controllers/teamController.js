@@ -9,19 +9,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTeams = void 0;
+exports.getTeamById = exports.getTeams = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getTeams = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const teams = yield prisma.team.findMany({
             include: {
-                productOwner: true, // Включаем данные о владельце продукта
-                projectManager: true, // Включаем данные о менеджере проекта
-                users: true, // Включаем данные о членах команды
+                productOwner: true,
+                projectManager: true,
+                users: true,
             },
         });
-        // Форматируем данные для фронтенда
         const formattedTeams = teams.map((team) => ({
             id: team.id,
             teamName: team.teamName,
@@ -52,3 +51,48 @@ const getTeams = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getTeams = getTeams;
+const getTeamById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const teamId = parseInt(req.params.id);
+        const team = yield prisma.team.findUnique({
+            where: { id: teamId },
+            include: {
+                productOwner: true,
+                projectManager: true,
+                users: true,
+            },
+        });
+        if (!team) {
+            res.status(404).json({ message: "Команда не найдена" });
+            return;
+        }
+        const formattedTeam = {
+            id: team.id,
+            teamName: team.teamName,
+            productOwner: team.productOwner
+                ? {
+                    username: team.productOwner.username,
+                    profilePictureUrl: team.productOwner.profilePictureUrl,
+                }
+                : null,
+            projectManager: team.projectManager
+                ? {
+                    username: team.projectManager.username,
+                    profilePictureUrl: team.projectManager.profilePictureUrl, // Исправлено: projectManager вместо productManager
+                }
+                : null,
+            teamMembers: team.users.map((member) => ({
+                username: member.username,
+                profilePictureUrl: member.profilePictureUrl,
+            })),
+        };
+        res.json(formattedTeam);
+    }
+    catch (error) {
+        res.status(500).json({ message: `Error retrieving team: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.getTeamById = getTeamById;

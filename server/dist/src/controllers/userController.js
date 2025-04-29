@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.postUser = exports.getUser = exports.getUsers = void 0;
 const client_1 = require("@prisma/client");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma = new client_1.PrismaClient();
 const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -18,18 +22,19 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.json(users);
     }
     catch (error) {
-        res
-            .status(500)
-            .json({ message: `Error retrieving users: ${error.message}` });
+        res.status(500).json({ message: `Error retrieving users: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
     }
 });
 exports.getUsers = getUsers;
 const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { cognitoId } = req.params;
+    const { userId } = req.params;
     try {
         const user = yield prisma.users.findFirst({
             where: {
-                cognitoId: cognitoId,
+                userId: Number(userId),
             },
         });
         if (!user) {
@@ -39,15 +44,18 @@ const getUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.json(user);
     }
     catch (error) {
-        res
-            .status(500)
-            .json({ message: `Error retrieving user: ${error.message}` });
+        res.status(500).json({ message: `Error retrieving user: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
     }
 });
 exports.getUser = getUser;
 const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { username, cognitoId, profilePictureUrl = "user.jpg", teamId = 1, role: roleFromBody = "SupportStaff", } = req.body;
+        const { username, password, profilePictureUrl = "user.jpg", teamId = 1, role: roleFromBody = "SupportStaff", } = req.body;
+        // Хешируем пароль
+        const hashedPassword = yield bcrypt_1.default.hash(password, 10);
         // Преобразуем отображённые значения в значения перечисления
         const roleMap = {
             "Сотрудник_поддержки": "SupportStaff",
@@ -55,28 +63,30 @@ const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             "SupportStaff": "SupportStaff",
             "Administrator": "Administrator",
         };
-        const role = roleMap[roleFromBody] || "SupportStaff"; // Дефолтное значение
+        const role = roleMap[roleFromBody] || "SupportStaff";
         // Находим максимальный userId и увеличиваем его на 1
         const lastUser = yield prisma.users.findFirst({
             orderBy: { userId: "desc" },
         });
-        const newUserId = lastUser ? lastUser.userId + 1 : 1; // Если пользователей нет, начинаем с 1
+        const newUserId = lastUser ? lastUser.userId + 1 : 1;
         const newUser = yield prisma.users.create({
             data: {
-                userId: newUserId, // Передаём сгенерированный userId
+                userId: newUserId,
                 username,
-                cognitoId,
+                password: hashedPassword,
                 profilePictureUrl,
                 teamId,
                 role,
+                forcePasswordChange: false,
             },
         });
         res.json({ message: "User Created Successfully", newUser });
     }
     catch (error) {
-        res
-            .status(500)
-            .json({ message: `Error retrieving users: ${error.message}` });
+        res.status(500).json({ message: `Error creating user: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
     }
 });
 exports.postUser = postUser;

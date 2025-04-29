@@ -35,14 +35,22 @@ const search = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             where: {
                 OR: [{ username: { contains: query } }],
             },
+            select: {
+                userId: true,
+                username: true,
+                profilePictureUrl: true,
+                teamId: true,
+                role: true,
+                forcePasswordChange: true, // Включаем, если нужно
+            },
         });
         res.json({ tasks, projects, users });
-        res.json({ tasks, projects });
     }
     catch (error) {
-        res
-            .status(500)
-            .json({ message: `Error performing search: ${error.message}` });
+        res.status(500).json({ message: `Error performing search: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
     }
 });
 exports.search = search;

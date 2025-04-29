@@ -10,7 +10,7 @@ import taskRoutes from "./routes/taskRoutes";
 import searchRoutes from "./routes/searchRoutes";
 import userRoutes from "./routes/userRouters";
 import teamRoutes from "./routes/teamRoutes";
-
+import authRoutes from "./routes/authRoutes";
 
 dotenv.config();
 
@@ -32,7 +32,7 @@ app.use("/tasks", taskRoutes);
 app.use("/search", searchRoutes);
 app.use("/users", userRoutes);
 app.use("/teams", teamRoutes);
-
+app.use("/auth", authRoutes);
 
 // Обработка 404
 app.use((req: express.Request, res: express.Response) => {
@@ -47,9 +47,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 const port = process.env.PORT || 3000;
 try {
-    app.listen(port, () => {
-        console.log(`Server running on port ${port}`);
-    });
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
 } catch (error) {
-    console.error("Failed to start server:", error);
+  console.error("Failed to start server:", error);
 }

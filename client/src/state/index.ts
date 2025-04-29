@@ -1,20 +1,14 @@
-// client/src/state/index.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { User } from './api'; // Импортируем тип User из api.ts
 
-// Определяем тип для пользователя (можно вынести в отдельный файл, например state/api.ts)
-interface UserDetails {
-  username: string;
-  profilePictureUrl?: string;
-}
-
-// Обновляем интерфейс initialStateTypes, добавляя currentUser
+// Обновляем интерфейс initialStateTypes
 export interface initialStateTypes {
   isSidebarCollapsed: boolean;
   isDarkMode: boolean;
-  currentUser: UserDetails | null; // Добавляем currentUser
+  currentUser: User | null; // Используем тип User из api.ts
 }
 
-// Обновляем начальное состояние, добавляя currentUser
+// Обновляем начальное состояние
 const initialState: initialStateTypes = {
   isSidebarCollapsed: false,
   isDarkMode: false,
@@ -31,8 +25,7 @@ export const globalSlice = createSlice({
     setIsDarkMode: (state, action: PayloadAction<boolean>) => {
       state.isDarkMode = action.payload;
     },
-    // Опционально: добавьте редьюсер для установки currentUser
-    setCurrentUser: (state, action: PayloadAction<UserDetails | null>) => {
+    setCurrentUser: (state, action: PayloadAction<User | null>) => {
       state.currentUser = action.payload;
     },
   },

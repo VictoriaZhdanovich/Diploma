@@ -1,4 +1,3 @@
-// client/src/components/Users.tsx
 "use client";
 import { useGetUsersQuery } from "@/state/api";
 import React from "react";
@@ -32,7 +31,7 @@ const columns: GridColDef[] = [
       <div className="flex h-full w-full items-center justify-center">
         <div className="h-9 w-9">
           <Image
-            src={params.value} // Используем значение как есть
+            src={params.value}
             alt={params.row.username}
             width={100}
             height={50}
@@ -42,6 +41,8 @@ const columns: GridColDef[] = [
       </div>
     ),
   },
+  { field: "role", headerName: "Role", width: 150 },
+  { field: "teamId", headerName: "Team ID", width: 100 },
 ];
 
 const Users = () => {

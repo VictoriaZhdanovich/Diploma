@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs/promises";
 import path from "path";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +16,6 @@ async function deleteAllData(orderedFileNames: string[]) {
   for (const modelName of modelNames) {
     console.log(`Attempting to access model: ${modelName}`);
     let model = (prisma as any)[modelName as ModelName];
-    // Пробуем альтернативное имя с подчёркиванием, если camelCase не работает
     if (!model && modelName === "taskAssignment") {
       model = (prisma as any)["task_assignment"];
       console.log(`Trying fallback model name: task_assignment`);
@@ -75,6 +75,12 @@ async function main() {
 
       for (const data of dataArray) {
         try {
+          if (modelName === "users") {
+            // Удаляем cognitoId и добавляем захешированный пароль
+            delete data.cognitoId;
+            data.password = await bcrypt.hash("TempPassword123!", 10);
+            data.forcePasswordChange = true;
+          }
           await model.create({ data });
           console.log(`Seeded record in ${modelName}:`, data);
         } catch (error: unknown) {

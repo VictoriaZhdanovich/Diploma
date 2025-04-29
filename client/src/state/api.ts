@@ -29,12 +29,12 @@ export enum Role {
 }
 
 export interface User {
-    userId: number; // Изменяем id на userId, чтобы соответствовать данным сервера
+    userId: number;
     username: string;
     profilePictureUrl?: string;
-    cognitoId: string;
     teamId?: number | null;
     role: Role;
+    forcePasswordChange: boolean;
 }
 
 export interface AuthUserResponse {
@@ -42,9 +42,9 @@ export interface AuthUserResponse {
         userId: number;
         username: string;
         profilePictureUrl?: string;
-        cognitoId: string;
         teamId?: number | null;
         role: Role;
+        forcePasswordChange: boolean;
     };
 }
 
@@ -58,7 +58,7 @@ export interface Attachment {
 
 export interface Team {
     id: number;
-    name: string;
+    teamName: string; // Изменено с name на teamName, чтобы соответствовать серверу
     productOwnerId: number;
     projectManagerId: number;
     description?: string;
@@ -103,7 +103,10 @@ export const api = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
         prepareHeaders: (headers) => {
-            console.log("Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+            const token = localStorage.getItem("token");
+            if (token) {
+                headers.set("Authorization", `Bearer ${token}`);
+            }
             return headers;
         },
         fetchFn: async (input, init) => {
@@ -157,6 +160,11 @@ export const api = createApi({
             query: () => "teams",
             providesTags: ["Teams"],
         }),
+        // Новый эндпоинт: Получение команды по ID
+        getTeam: build.query<Team, number>({
+            query: (teamId) => `teams/${teamId}`,
+            providesTags: (result, error, teamId) => [{ type: "Teams" as const, id: teamId }],
+        }),
         search: build.query<SearchResults, string>({
             query: (query) => `search?query=${query}`,
         }),
@@ -186,6 +194,7 @@ export const {
     useUpdateTaskStatusMutation,
     useSearchQuery,
     useGetTeamsQuery,
+    useGetTeamQuery, // Добавляем новый хук
     useGetTasksByUserQuery,
     useGetAuthUserQuery,
     useGetUsersQuery,

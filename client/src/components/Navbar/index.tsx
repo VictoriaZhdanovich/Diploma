@@ -1,40 +1,33 @@
-// client/src/components/Navbar/index.tsx
-"use client";
+'use client';
 
 import React from 'react';
-import { Menu, Moon, Search, Settings, Sun, User } from "lucide-react"; // Добавили иконку User
-import Link from "next/link";
-import Image from "next/image"; // Импортируем Image из next/image
+import { Menu, Moon, Search, Sun, User } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useAppDispatch, useAppSelector } from '@/app/redux';
-import { setIsDarkMode, setIsSidebarCollapsed } from '@/state';
-
-// Предполагаем, что у вас есть тип для пользователя в state/api.ts
-interface UserDetails {
-  username: string;
-  profilePictureUrl?: string;
-}
+import { setIsDarkMode, setIsSidebarCollapsed, setCurrentUser } from '@/state';
+import { useRouter } from 'next/navigation';
+import { User as UserType } from '@/state/api';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const currentUser = useAppSelector(
+    (state) => state.global.currentUser
+  ) as UserType | null;
 
-  // Получаем данные текущего пользователя из Redux (настройте путь в зависимости от вашей структуры состояния)
-  const currentUserDetails = useAppSelector((state) => state.global.currentUser) as UserDetails | null;
-
-  // Заглушка для функции выхода (замените на вашу логику выхода)
   const handleSignOut = () => {
-    console.log("Пользователь вышел из системы");
-    // Добавьте вашу логику выхода, например, очистка токенов, перенаправление и т.д.
-    // Пример: localStorage.removeItem("token");
-    // window.location.href = "/login";
+    localStorage.removeItem('token');
+    dispatch(setCurrentUser(null));
+    router.push('/login');
   };
 
   return (
     <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black dark:px-4 dark:py-3">
-      {/* Панель поиска */}
       <div className="flex items-center gap-8">
         {!isSidebarCollapsed ? null : (
           <button onClick={() => dispatch(setIsSidebarCollapsed(!isSidebarCollapsed))}>
@@ -50,7 +43,6 @@ const Navbar = () => {
           />
         </div>
       </div>
-      {/* Объединяем иконки и разделитель в один блок */}
       <div className="flex items-center">
         <div className="flex items-center gap-2">
           <button
@@ -67,35 +59,30 @@ const Navbar = () => {
               <Moon className="h-6 w-6 cursor-pointer dark:text-white" />
             )}
           </button>
-          <Link
-            href="/settings"
-            className={
-              isDarkMode
-                ? `h-min w-min rounded p-2 dark:hover:bg-gray-700`
-                : `h-min w-min rounded p-2 hover:bg-gray-100`
-            }
-          >
-            <Settings className="h-6 w-6 cursor-pointer dark:text-white" />
-          </Link>
         </div>
         <div className="ml-2 mr-5 hidden min-h-[2em] w-[0.1rem] bg-gray-200 md:inline-block"></div>
         <div className="hidden items-center justify-between md:flex">
           <div className="align-center flex h-9 w-9 justify-center">
-            {currentUserDetails?.profilePictureUrl ? (
-              <Image
-                src={`https://pm-s3-images.s3.us-east-2.amazonaws.com/${currentUserDetails.profilePictureUrl}`}
-                alt={currentUserDetails.username || "Фотография профиля пользователя"}
-                width={36} // Соответствует h-9 (36px)
-                height={36} // Соответствует h-9 (36px)
-                className="h-full rounded-full object-cover"
-              />
-            ) : (
-              <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />
-            )}
+          {currentUser?.profilePictureUrl ? (
+  <Image
+    src={currentUser.profilePictureUrl} // Уберите префикс S3
+    alt={currentUser.username || 'Фотография профиля пользователя'}
+    width={36}
+    height={36}
+    className="h-full rounded-full object-cover"
+  />
+) : (
+  <User className="h-6 w-6 cursor-pointer self-center rounded-full dark:text-white" />
+)}
           </div>
-          <span className="mx-3 text-gray-800 dark:text-white">
-            {currentUserDetails?.username || "Гость"}
-          </span>
+          <div className="mx-3 flex flex-col">
+            <span className="text-gray-800 dark:text-white">
+              {currentUser?.username || 'Гость'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {currentUser?.role || ''}
+            </span>
+          </div>
           <button
             className="hidden rounded bg-orange-400 px-4 py-2 text-xs font-bold text-white hover:bg-orange-500 md:block"
             onClick={handleSignOut}

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const promises_1 = __importDefault(require("fs/promises"));
 const path_1 = __importDefault(require("path"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma = new client_1.PrismaClient();
 function deleteAllData(orderedFileNames) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -25,7 +26,6 @@ function deleteAllData(orderedFileNames) {
         for (const modelName of modelNames) {
             console.log(`Attempting to access model: ${modelName}`);
             let model = prisma[modelName];
-            // Пробуем альтернативное имя с подчёркиванием, если camelCase не работает
             if (!model && modelName === "taskAssignment") {
                 model = prisma["task_assignment"];
                 console.log(`Trying fallback model name: task_assignment`);
@@ -82,6 +82,12 @@ function main() {
                 }
                 for (const data of dataArray) {
                     try {
+                        if (modelName === "users") {
+                            // Удаляем cognitoId и добавляем захешированный пароль
+                            delete data.cognitoId;
+                            data.password = yield bcrypt_1.default.hash("TempPassword123!", 10);
+                            data.forcePasswordChange = true;
+                        }
                         yield model.create({ data });
                         console.log(`Seeded record in ${modelName}:`, data);
                     }

@@ -14,6 +14,7 @@ const taskRoutes_1 = __importDefault(require("./routes/taskRoutes"));
 const searchRoutes_1 = __importDefault(require("./routes/searchRoutes"));
 const userRouters_1 = __importDefault(require("./routes/userRouters"));
 const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
+const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -31,6 +32,7 @@ app.use("/tasks", taskRoutes_1.default);
 app.use("/search", searchRoutes_1.default);
 app.use("/users", userRouters_1.default);
 app.use("/teams", teamRoutes_1.default);
+app.use("/auth", authRoutes_1.default);
 // Обработка 404
 app.use((req, res) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found` });

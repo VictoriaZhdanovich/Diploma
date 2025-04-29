@@ -28,12 +28,20 @@ export const search = async (req: Request, res: Response): Promise<void> => {
       where: {
         OR: [{ username: { contains: query as string } }],
       },
+      select: {
+        userId: true,
+        username: true,
+        profilePictureUrl: true,
+        teamId: true,
+        role: true,
+        forcePasswordChange: true, // Включаем, если нужно
+      },
     });
+
     res.json({ tasks, projects, users });
-    res.json({ tasks, projects });
   } catch (error: any) {
-    res
-      .status(500)
-      .json({ message: `Error performing search: ${error.message}` });
+    res.status(500).json({ message: `Error performing search: ${error.message}` });
+  } finally {
+    await prisma.$disconnect();
   }
 };
