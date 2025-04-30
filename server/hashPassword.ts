@@ -5,4 +5,4 @@ async function hashPassword(password: string) {
   console.log(`Захешированный пароль для "${password}": ${hashedPassword}`);
 }
 
-hashPassword('12345!').catch(console.error);
+hashPassword('12345').catch(console.error);

@@ -15,6 +15,7 @@ const searchRoutes_1 = __importDefault(require("./routes/searchRoutes"));
 const userRouters_1 = __importDefault(require("./routes/userRouters"));
 const teamRoutes_1 = __importDefault(require("./routes/teamRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const path_1 = __importDefault(require("path"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -42,6 +43,7 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: "Something went wrong!" });
 });
+app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "../public/uploads")));
 const port = process.env.PORT || 3000;
 try {
     app.listen(port, () => {

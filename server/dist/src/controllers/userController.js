@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.postUser = exports.getUser = exports.getUsers = void 0;
+exports.deleteUser = exports.updateUser = exports.postUser = exports.getUser = exports.getUsers = void 0;
 const client_1 = require("@prisma/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const prisma = new client_1.PrismaClient();
@@ -54,9 +54,23 @@ exports.getUser = getUser;
 const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username, password, profilePictureUrl = "user.jpg", teamId = 1, role: roleFromBody = "SupportStaff", } = req.body;
-        // Хешируем пароль
+        const existingUser = yield prisma.users.findFirst({
+            where: { username },
+        });
+        if (existingUser) {
+            res.status(400).json({ message: "Пользователь с таким именем уже существует" });
+            return;
+        }
+        if (teamId) {
+            const team = yield prisma.team.findUnique({
+                where: { id: teamId },
+            });
+            if (!team) {
+                res.status(400).json({ message: `Команда с ID ${teamId} не найдена` });
+                return;
+            }
+        }
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
-        // Преобразуем отображённые значения в значения перечисления
         const roleMap = {
             "Сотрудник_поддержки": "SupportStaff",
             "Администратор": "Administrator",
@@ -64,7 +78,6 @@ const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             "Administrator": "Administrator",
         };
         const role = roleMap[roleFromBody] || "SupportStaff";
-        // Находим максимальный userId и увеличиваем его на 1
         const lastUser = yield prisma.users.findFirst({
             orderBy: { userId: "desc" },
         });
@@ -80,7 +93,7 @@ const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 forcePasswordChange: false,
             },
         });
-        res.json({ message: "User Created Successfully", newUser });
+        res.status(201).json({ message: "User Created Successfully", newUser });
     }
     catch (error) {
         res.status(500).json({ message: `Error creating user: ${error.message}` });
@@ -90,3 +103,79 @@ const postUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.postUser = postUser;
+const updateUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId } = req.params;
+        const { username, profilePictureUrl, teamId, role: roleFromBody } = req.body;
+        const existingUser = yield prisma.users.findFirst({
+            where: { userId: Number(userId) },
+        });
+        if (!existingUser) {
+            res.status(404).json({ message: "Пользователь не найден" });
+            return;
+        }
+        const duplicateUser = yield prisma.users.findFirst({
+            where: { username, userId: { not: Number(userId) } },
+        });
+        if (duplicateUser) {
+            res.status(400).json({ message: "Пользователь с таким именем уже существует" });
+            return;
+        }
+        if (teamId) {
+            const team = yield prisma.team.findUnique({
+                where: { id: teamId },
+            });
+            if (!team) {
+                res.status(400).json({ message: `Команда с ID ${teamId} не найдена` });
+                return;
+            }
+        }
+        const roleMap = {
+            "Сотрудник_поддержки": "SupportStaff",
+            "Администратор": "Administrator",
+            "SupportStaff": "SupportStaff",
+            "Administrator": "Administrator",
+        };
+        const role = roleMap[roleFromBody] || "SupportStaff";
+        const updatedUser = yield prisma.users.update({
+            where: { userId: Number(userId) },
+            data: {
+                username,
+                profilePictureUrl,
+                teamId: teamId !== null && teamId !== void 0 ? teamId : null,
+                role,
+            },
+        });
+        res.status(200).json({ message: "User Updated Successfully", updatedUser });
+    }
+    catch (error) {
+        res.status(500).json({ message: `Error updating user: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.updateUser = updateUser;
+const deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId } = req.params;
+        const existingUser = yield prisma.users.findFirst({
+            where: { userId: Number(userId) },
+        });
+        if (!existingUser) {
+            res.status(404).json({ message: "Пользователь не найден" });
+            return;
+        }
+        yield prisma.users.delete({
+            where: { userId: Number(userId) },
+        });
+        res.status(200).json({ message: "User Deleted Successfully" });
+    }
+    catch (error) {
+        res.status(500).json({ message: `Error deleting user: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.deleteUser = deleteUser;

@@ -12,6 +12,10 @@ import userRoutes from "./routes/userRouters";
 import teamRoutes from "./routes/teamRoutes";
 import authRoutes from "./routes/authRoutes";
 
+
+import path from "path";
+
+
 dotenv.config();
 
 const app = express();
@@ -44,6 +48,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error(err.stack);
   res.status(500).json({ message: "Something went wrong!" });
 });
+
+app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+
 
 const port = process.env.PORT || 3000;
 try {

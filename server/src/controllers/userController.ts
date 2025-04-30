@@ -2,10 +2,16 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-// Определяем интерфейс для тела запроса
 interface CreateUserBody {
   username: string;
   password: string;
+  profilePictureUrl?: string;
+  teamId?: number;
+  role: "SupportStaff" | "Administrator";
+}
+
+interface UpdateUserBody {
+  username: string;
   profilePictureUrl?: string;
   teamId?: number;
   role: "SupportStaff" | "Administrator";
@@ -59,10 +65,27 @@ export const postUser = async (
       role: roleFromBody = "SupportStaff",
     } = req.body;
 
-    // Хешируем пароль
+    const existingUser = await prisma.users.findFirst({
+      where: { username },
+    });
+
+    if (existingUser) {
+      res.status(400).json({ message: "Пользователь с таким именем уже существует" });
+      return;
+    }
+
+    if (teamId) {
+      const team = await prisma.team.findUnique({
+        where: { id: teamId },
+      });
+      if (!team) {
+        res.status(400).json({ message: `Команда с ID ${teamId} не найдена` });
+        return;
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Преобразуем отображённые значения в значения перечисления
     const roleMap: Record<string, "SupportStaff" | "Administrator"> = {
       "Сотрудник_поддержки": "SupportStaff",
       "Администратор": "Administrator",
@@ -72,7 +95,6 @@ export const postUser = async (
 
     const role = roleMap[roleFromBody] || "SupportStaff";
 
-    // Находим максимальный userId и увеличиваем его на 1
     const lastUser = await prisma.users.findFirst({
       orderBy: { userId: "desc" },
     });
@@ -89,9 +111,97 @@ export const postUser = async (
         forcePasswordChange: false,
       },
     });
-    res.json({ message: "User Created Successfully", newUser });
+    res.status(201).json({ message: "User Created Successfully", newUser });
   } catch (error: any) {
     res.status(500).json({ message: `Error creating user: ${error.message}` });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+export const updateUser = async (
+  req: Request<{ userId: string }, {}, UpdateUserBody>,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { username, profilePictureUrl, teamId, role: roleFromBody } = req.body;
+
+    const existingUser = await prisma.users.findFirst({
+      where: { userId: Number(userId) },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ message: "Пользователь не найден" });
+      return;
+    }
+
+    const duplicateUser = await prisma.users.findFirst({
+      where: { username, userId: { not: Number(userId) } },
+    });
+
+    if (duplicateUser) {
+      res.status(400).json({ message: "Пользователь с таким именем уже существует" });
+      return;
+    }
+
+    if (teamId) {
+      const team = await prisma.team.findUnique({
+        where: { id: teamId },
+      });
+      if (!team) {
+        res.status(400).json({ message: `Команда с ID ${teamId} не найдена` });
+        return;
+      }
+    }
+
+    const roleMap: Record<string, "SupportStaff" | "Administrator"> = {
+      "Сотрудник_поддержки": "SupportStaff",
+      "Администратор": "Administrator",
+      "SupportStaff": "SupportStaff",
+      "Administrator": "Administrator",
+    };
+
+    const role = roleMap[roleFromBody] || "SupportStaff";
+
+    const updatedUser = await prisma.users.update({
+      where: { userId: Number(userId) },
+      data: {
+        username,
+        profilePictureUrl,
+        teamId: teamId ?? null,
+        role,
+      },
+    });
+
+    res.status(200).json({ message: "User Updated Successfully", updatedUser });
+  } catch (error: any) {
+    res.status(500).json({ message: `Error updating user: ${error.message}` });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+export const deleteUser = async (req: Request<{ userId: string }>, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+
+    const existingUser = await prisma.users.findFirst({
+      where: { userId: Number(userId) },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ message: "Пользователь не найден" });
+      return;
+    }
+
+    await prisma.users.delete({
+      where: { userId: Number(userId) },
+    });
+
+    res.status(200).json({ message: "User Deleted Successfully" });
+  } catch (error: any) {
+    res.status(500).json({ message: `Error deleting user: ${error.message}` });
   } finally {
     await prisma.$disconnect();
   }

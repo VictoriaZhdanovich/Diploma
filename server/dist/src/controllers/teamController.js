@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTeamById = exports.getTeams = void 0;
+exports.postTeam = exports.getTeamById = exports.getTeams = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getTeams = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -78,7 +78,7 @@ const getTeamById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             projectManager: team.projectManager
                 ? {
                     username: team.projectManager.username,
-                    profilePictureUrl: team.projectManager.profilePictureUrl, // Исправлено: projectManager вместо productManager
+                    profilePictureUrl: team.projectManager.profilePictureUrl,
                 }
                 : null,
             teamMembers: team.users.map((member) => ({
@@ -96,3 +96,73 @@ const getTeamById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 exports.getTeamById = getTeamById;
+const postTeam = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { teamName, productOwnerId, projectManagerId } = req.body;
+        // Проверяем, существует ли Product Owner
+        const productOwner = yield prisma.users.findUnique({
+            where: { userId: productOwnerId },
+        });
+        if (!productOwner) {
+            res.status(400).json({ message: `Пользователь с ID ${productOwnerId} не найден` });
+            return;
+        }
+        // Проверяем, существует ли Project Manager
+        const projectManager = yield prisma.users.findUnique({
+            where: { userId: projectManagerId },
+        });
+        if (!projectManager) {
+            res.status(400).json({ message: `Пользователь с ID ${projectManagerId} не найден` });
+            return;
+        }
+        // Проверяем, не существует ли команда с таким названием
+        const existingTeam = yield prisma.team.findFirst({
+            where: { teamName },
+        });
+        if (existingTeam) {
+            res.status(400).json({ message: "Команда с таким названием уже существует" });
+            return;
+        }
+        // Создаём новую команду
+        const newTeam = yield prisma.team.create({
+            data: {
+                teamName,
+                productOwnerUserId: productOwnerId, // Исправили productOwnerId на productOwnerUserId
+                projectManagerUserId: projectManagerId, // Исправили projectManagerId на projectManagerUserId
+            },
+            include: {
+                productOwner: true,
+                projectManager: true,
+                users: true,
+            },
+        });
+        const formattedTeam = {
+            id: newTeam.id,
+            teamName: newTeam.teamName,
+            productOwner: newTeam.productOwner
+                ? {
+                    username: newTeam.productOwner.username,
+                    profilePictureUrl: newTeam.productOwner.profilePictureUrl,
+                }
+                : null,
+            projectManager: newTeam.projectManager
+                ? {
+                    username: newTeam.projectManager.username,
+                    profilePictureUrl: newTeam.projectManager.profilePictureUrl,
+                }
+                : null,
+            teamMembers: newTeam.users.map((member) => ({
+                username: member.username,
+                profilePictureUrl: member.profilePictureUrl,
+            })),
+        };
+        res.status(201).json({ message: "Team Created Successfully", newTeam: formattedTeam });
+    }
+    catch (error) {
+        res.status(500).json({ message: `Error creating team: ${error.message}` });
+    }
+    finally {
+        yield prisma.$disconnect();
+    }
+});
+exports.postTeam = postTeam;

@@ -1,10 +1,11 @@
-// server/src/routes/teamRoutes.ts
 import { Router } from "express";
-import { getTeams, getTeamById } from "../controllers/teamController";
+import { getTeams, getTeamById, postTeam } from "../controllers/teamController";
+import { authenticateToken } from "../controllers/authController";
 
 const router = Router();
 
-router.get("/", getTeams);
-router.get("/:id", getTeamById); // Новый маршрут для получения команды по ID
+router.get("/", authenticateToken, getTeams);
+router.get("/:id", authenticateToken, getTeamById);
+router.post("/", authenticateToken, postTeam);
 
 export default router;

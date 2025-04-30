@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useGetProjectsQuery } from '@/state/api';
+import { useGetProjectsQuery, useGetTeamQuery } from '@/state/api'; // Добавляем useGetTeamQuery
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 // Type guard для проверки FetchBaseQueryError
@@ -20,12 +20,22 @@ const Sidebar = () => {
 
     const { data: projects, isLoading, isError, error } = useGetProjectsQuery();
 
-    console.log("Projects data:", projects);
-    console.log("showProjects:", showProjects);
-
     const dispatch = useAppDispatch();
     const isSidebarCollapsed = useAppSelector(
         (state) => state.global.isSidebarCollapsed
+    );
+    const currentUser = useAppSelector((state) => state.global.currentUser); // Получаем текущего пользователя
+
+    // Проверяем, что teamId существует и является числом
+    const teamId =
+        currentUser && currentUser.teamId !== null && currentUser.teamId !== undefined
+            ? currentUser.teamId
+            : null;
+
+    // Получаем данные команды
+    const { data: teamData, isLoading: isTeamLoading, isError: isTeamError } = useGetTeamQuery(
+        teamId as number,
+        { skip: !teamId } // Пропускаем запрос, если teamId отсутствует
     );
 
     const sidebarClassNames = `fixed flex flex-col h-[100%] justify-between shadow-xl
@@ -57,7 +67,9 @@ const Sidebar = () => {
                     <Image src="/logo.png" alt="Logo" width={40} height={40} />
                     <div>
                         <h3 className="text-md font-bold tracking-widest dark:text-gray-200">
-                            MY TEAM
+                            {currentUser?.role === "SupportStaff"  && teamData?.teamName
+                                ? teamData.teamName.toUpperCase() 
+                                : "MY TEAM"}
                         </h3>
                         <div className="mt-1 flex items-start gap-2">
                             <LockIcon className="mt-[0.1rem] h-3 w-3 text-gray-500 dark:text-gray-400" />

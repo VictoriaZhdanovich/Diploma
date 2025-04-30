@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-// server/src/routes/teamRoutes.ts
 const express_1 = require("express");
 const teamController_1 = require("../controllers/teamController");
+const authController_1 = require("../controllers/authController");
 const router = (0, express_1.Router)();
-router.get("/", teamController_1.getTeams);
-router.get("/:id", teamController_1.getTeamById); // Новый маршрут для получения команды по ID
+router.get("/", authController_1.authenticateToken, teamController_1.getTeams);
+router.get("/:id", authController_1.authenticateToken, teamController_1.getTeamById);
+router.post("/", authController_1.authenticateToken, teamController_1.postTeam);
 exports.default = router;

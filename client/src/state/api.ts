@@ -31,7 +31,7 @@ export enum Role {
 export interface User {
     userId: number;
     username: string;
-    profilePictureUrl?: string;
+    profilePictureUrl?: string | null;
     teamId?: number | null;
     role: Role;
     forcePasswordChange: boolean;
@@ -58,7 +58,7 @@ export interface Attachment {
 
 export interface Team {
     id: number;
-    teamName: string; // Изменено с name на teamName, чтобы соответствовать серверу
+    teamName: string;
     productOwnerId: number;
     projectManagerId: number;
     description?: string;
@@ -97,6 +97,25 @@ export interface Task {
     assignee?: User;
     comments?: Comment[];
     attachments?: Attachment[];
+}
+
+export interface CreateUserResponse {
+    message: string;
+    newUser: User;
+}
+
+export interface UpdateUserResponse {
+    message: string;
+    updatedUser: User;
+}
+
+export interface DeleteUserResponse {
+    message: string;
+}
+
+export interface CreateTeamResponse {
+    message: string;
+    newTeam: Team;
 }
 
 export const api = createApi({
@@ -160,7 +179,6 @@ export const api = createApi({
             query: () => "teams",
             providesTags: ["Teams"],
         }),
-        // Новый эндпоинт: Получение команды по ID
         getTeam: build.query<Team, number>({
             query: (teamId) => `teams/${teamId}`,
             providesTags: (result, error, teamId) => [{ type: "Teams" as const, id: teamId }],
@@ -183,6 +201,42 @@ export const api = createApi({
             query: () => "users",
             providesTags: ["Users"],
         }),
+        createUser: build.mutation<CreateUserResponse, Partial<User> & { password: string }>({
+            query: (user) => ({
+                url: "users",
+                method: "POST",
+                body: user,
+            }),
+            invalidatesTags: ["Users"],
+        }),
+        createTeam: build.mutation<CreateTeamResponse, Partial<Team>>({
+            query: (team) => ({
+                url: "teams",
+                method: "POST",
+                body: team,
+            }),
+            invalidatesTags: ["Teams"],
+        }),
+        updateUser: build.mutation<UpdateUserResponse, Partial<User> & { userId: number }>({
+            query: (user) => ({
+                url: `users/${user.userId}`,
+                method: "PATCH",
+                body: {
+                    username: user.username,
+                    role: user.role,
+                    teamId: user.teamId,
+                    profilePictureUrl: user.profilePictureUrl,
+                },
+            }),
+            invalidatesTags: ["Users"],
+        }),
+        deleteUser: build.mutation<DeleteUserResponse, number>({
+            query: (userId) => ({
+                url: `users/${userId}`,
+                method: "DELETE",
+            }),
+            invalidatesTags: ["Users"],
+        }),
     }),
 });
 
@@ -194,8 +248,12 @@ export const {
     useUpdateTaskStatusMutation,
     useSearchQuery,
     useGetTeamsQuery,
-    useGetTeamQuery, // Добавляем новый хук
+    useGetTeamQuery,
     useGetTasksByUserQuery,
     useGetAuthUserQuery,
     useGetUsersQuery,
+    useCreateUserMutation,
+    useCreateTeamMutation,
+    useUpdateUserMutation,
+    useDeleteUserMutation,
 } = api;
